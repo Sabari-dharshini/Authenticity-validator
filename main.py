@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-import pytesseract
+
 
 st.set_page_config(page_title="Certificate Authenticity Validator")
 
