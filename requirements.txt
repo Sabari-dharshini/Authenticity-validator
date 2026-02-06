@@ -1,6 +1,5 @@
-fastapi
-uvicorn
-pytesseract
+streamlit
+easyocr
 opencv-python-headless
 Pillow
-python-multipart
+
