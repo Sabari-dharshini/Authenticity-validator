@@ -1,33 +1,59 @@
-import sys
-import os
 import streamlit as st
-from verifier import verify_certificate
-from confidence import calculate_confidence
+from PIL import Image
+import pytesseract
+
+st.set_page_config(page_title="Certificate Authenticity Validator")
+
+st.title("🎓 Fake Degree / Certificate Detection System")
+
+# ---------------- VERIFICATION LOGIC ---------------- #
+def verify_certificate(text):
+    score = 0
+    issues = []
+
+    if "University" in text:
+        score += 30
+    else:
+        issues.append("University name mismatch")
+
+    if "Degree" in text or "B.Tech" in text:
+        score += 30
+    else:
+        issues.append("Degree information missing")
+
+    if "Registration" in text or "Roll" in text:
+        score += 40
+    else:
+        issues.append("Invalid registration number")
+
+    return score, issues
 
 
-sys.path.append(os.path.abspath(os.path.dirname(__file__)))
-from fastapi import FastAPI, UploadFile, File
-import shutil
-from ocr import extract_text
-from verifier import verify_certificate
-from confidence import calculate_confidence
+def calculate_confidence(score):
+    return round(score * 0.9, 2)
+# --------------------------------------------------- #
 
-app = FastAPI()
+uploaded_file = st.file_uploader(
+    "Upload Degree / Certificate",
+    type=["png", "jpg", "jpeg"]
+)
 
-@app.post("/verify")
-async def verify(file: UploadFile = File(...)):
-    path = f"temp_{file.filename}"
-    with open(path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+if uploaded_file:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Certificate", use_column_width=True)
 
-    text = extract_text(path)
-    db_score, reasons = verify_certificate(text)
-    confidence = calculate_confidence(70, db_score)
+    if st.button("Verify Certificate"):
+        extracted_text = pytesseract.image_to_string(image)
 
-    result = "GENUINE" if confidence > 60 else "FAKE"
+        score, issues = verify_certificate(extracted_text)
+        confidence = calculate_confidence(score)
 
-    return {
-        "result": result,
-        "confidence": f"{confidence}%",
-        "reasons": reasons
-    }
+        if confidence >= 60:
+            st.success(f"✅ GENUINE CERTIFICATE ({confidence}%)")
+        else:
+            st.error(f"❌ LIKELY FAKE ({confidence}%)")
+
+        if issues:
+            st.warning("Issues Detected:")
+            for issue in issues:
+                st.write(f"- {issue}")
