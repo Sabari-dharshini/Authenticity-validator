@@ -1,3 +1,11 @@
+import sys
+import os
+import streamlit as st
+from verifier import verify_certificate
+from confidence import calculate_confidence
+
+
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 from fastapi import FastAPI, UploadFile, File
 import shutil
 from ocr import extract_text
